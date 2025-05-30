@@ -1,11 +1,10 @@
-// Configuración de Supabase
+
 const SUPABASE_CONFIG = {
   url: 'https://moemwzfqrzxkbqhaswaj.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vZW13emZxcnp4a2JxaGFzd2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1Njc0MjUsImV4cCI6MjA2NDE0MzQyNX0.K1NxCr78RTHI81XkjEQBSXCVyuMtpzOFmEdUg7eldzk',
   table: 'sensor_data'
 };
 
-// Clase para manejar la conexión con Supabase
 class SupabaseClient {
   constructor(config) {
     this.supabase = window.supabase.createClient(config.url, config.anonKey);
@@ -41,7 +40,6 @@ class SupabaseClient {
         if (status === 'SUBSCRIBED') {
           console.log('Subscribed to realtime changes');
         } else if (status === 'CHANNEL_ERROR') {
-          console.error('Realtime channel error:', err);
         }
       });
   }
@@ -53,7 +51,6 @@ class SupabaseClient {
   }
 }
 
-// Clase para manejar las estadísticas
 class Statistics {
   constructor() {
     this.temperatureData = [];
@@ -69,8 +66,6 @@ class Statistics {
   addDataPoint(temperature, humidity) {
     this.temperatureData.push(temperature);
     this.humidityData.push(humidity);
-
-    // Mantener solo los últimos 100 puntos para estadísticas
     if (this.temperatureData.length > 100) {
       this.temperatureData.shift();
       this.humidityData.shift();
@@ -103,7 +98,6 @@ class Statistics {
   }
 }
 
-// Clase principal de la aplicación
 class DHT11Monitor {
   constructor() {
     this.supabaseClient = new SupabaseClient(SUPABASE_CONFIG);
@@ -127,8 +121,6 @@ class DHT11Monitor {
       this.subscribeToRealtimeUpdates();
       this.updateStatus('connected', 'Conectado');
     } catch (error) {
-      console.error('Initialization error:', error);
-      this.updateStatus('error', 'Error de conexión');
     }
   }
 
@@ -137,7 +129,6 @@ class DHT11Monitor {
       const data = await this.supabaseClient.fetchInitialData();
 
       if (data && data.length > 0) {
-        // Filtrar datos válidos
         const validData = data.filter(record => this.validateSensorData(record));
 
         if (validData.length > 0) {
@@ -146,46 +137,35 @@ class DHT11Monitor {
           const lastRecord = validData[validData.length - 1];
           this.updateCurrentValues(lastRecord);
         } else {
-          console.warn('No se encontraron datos válidos');
-          this.showNotification('No hay datos válidos disponibles', 'warning');
+         
         }
       } else {
-        console.log('No hay datos disponibles');
-        this.showNotification('No hay datos disponibles', 'info');
+        
       }
 
       this.elements.loading.style.display = 'none';
     } catch (error) {
-      console.error('Error loading initial data:', error);
-      this.elements.loading.innerHTML = '<p class="text-red-600">Error al cargar datos: ' + error.message + '</p>';
-      this.showNotification('Error al cargar datos', 'error');
     }
   }
 
   subscribeToRealtimeUpdates() {
     this.supabaseClient.subscribeToChanges((payload) => {
-      console.log('Realtime update:', payload);
 
       if (payload.eventType === 'INSERT' && payload.new) {
         const newRecord = payload.new;
-
-        // Validar que los datos existan y sean números válidos
         if (this.validateSensorData(newRecord)) {
           this.updateCurrentValues(newRecord);
           this.statistics.addDataPoint(newRecord.temperature, newRecord.humidity);
           this.showNotification('Nuevos datos recibidos');
         } else {
-          console.warn('Datos inválidos recibidos:', newRecord);
-          this.showNotification('Datos inválidos recibidos', 'warning');
         }
       }
     });
   }
 
   updateCurrentValues(record) {
-    // Validar que los datos existan antes de mostrarlos
     if (!this.validateSensorData(record)) {
-      console.warn('Invalid sensor data:', record);
+     
       return;
     }
 
@@ -252,12 +232,10 @@ class DHT11Monitor {
   }
 }
 
-// Inicializar la aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
   window.dht11Monitor = new DHT11Monitor();
 });
 
-// Cleanup cuando se cierre la página
 window.addEventListener('beforeunload', () => {
   if (window.dht11Monitor) {
     window.dht11Monitor.destroy();
